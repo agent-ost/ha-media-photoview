@@ -316,6 +316,148 @@ class PhotoviewApiClient:
             _LOGGER.debug("Retrieved %d photos from all media", len(photos))
             return photos
 
+    async def async_get_face_groups(self, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
+        """Get face groups (people) from Photoview."""
+        _LOGGER.debug(
+            "Fetching face groups from Photoview (limit: %d, offset: %d)", limit, offset)
+
+        if not self._auth_token:
+            _LOGGER.debug("No auth token available, authenticating first")
+            await self.async_authenticate()
+
+        query = """
+        query myFaces($limit: Int, $offset: Int) {
+            myFaceGroups(paginate: {limit: $limit, offset: $offset }) {
+                id
+                label
+                imageFaceCount
+                imageFaces(paginate: {limit: 1}) {
+                    id
+                    rectangle {
+                        minX
+                        maxX
+                        minY
+                        maxY
+                        __typename
+                    }
+                    media {
+                        id
+                        title
+                        thumbnail {
+                            url
+                            width
+                            height
+                            __typename
+                        }
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+        }
+        """
+
+        variables = {"limit": limit, "offset": offset}
+        response = await self._graphql_request(query, variables)
+        face_groups = response.get("data", {}).get("myFaceGroups", [])
+
+        # Filter out face groups without labels (unlabeled people)
+        labeled_face_groups = [
+            group for group in face_groups if group.get("label")]
+
+        _LOGGER.debug("Retrieved %d face groups from Photoview (%d labeled)",
+                      len(face_groups), len(labeled_face_groups))
+        return labeled_face_groups
+
+    async def async_get_person_photos(self, face_group_id: str, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
+        """Get photos for a specific person/face group."""
+        _LOGGER.debug("Fetching photos for face group: %s", face_group_id)
+
+        if not self._auth_token:
+            _LOGGER.debug("No auth token available, authenticating first")
+            await self.async_authenticate()
+
+        query = """
+        query getFaceGroupPhotos($id: ID!, $limit: Int, $offset: Int) {
+            faceGroup(id: $id) {
+                id
+                label
+                imageFaces(paginate: {limit: $limit, offset: $offset}) {
+                    id
+                    rectangle {
+                        minX
+                        maxX
+                        minY
+                        maxY
+                        __typename
+                    }
+                    media {
+                        id
+                        title
+                        type
+                        blurhash
+                        thumbnail {
+                            url
+                            width
+                            height
+                            __typename
+                        }
+                        highRes {
+                            url
+                        }
+                        videoWeb {
+                            url
+                        }
+                        favorite
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+        }
+        """
+
+        variables = {"id": face_group_id, "limit": limit, "offset": offset}
+        response = await self._graphql_request(query, variables)
+        face_group_data = response.get("data", {}).get("faceGroup", {})
+        photos = []
+
+        # Extract media from imageFaces
+        for image_face in face_group_data.get("imageFaces", []):
+            if image_face.get("media"):
+                photos.append(image_face["media"])
+
+        _LOGGER.debug("Retrieved %d photos for face group %s",
+                      len(photos), face_group_id)
+        return photos
+
+    async def async_get_face_group_details(self, face_group_id: str) -> dict[str, Any]:
+        """Get details for a specific face group."""
+        _LOGGER.debug("Fetching face group details for: %s", face_group_id)
+
+        if not self._auth_token:
+            _LOGGER.debug("No auth token available, authenticating first")
+            await self.async_authenticate()
+
+        query = """
+        query getFaceGroupDetails($id: ID!) {
+            faceGroup(id: $id) {
+                id
+                label
+                imageFaceCount
+            }
+        }
+        """
+
+        variables = {"id": face_group_id}
+        response = await self._graphql_request(query, variables)
+        face_group_data = response.get("data", {}).get("faceGroup", {})
+        _LOGGER.debug("Retrieved details for face group %s: %s",
+                      face_group_id, face_group_data.get("label", "Unknown"))
+        return face_group_data
+
     async def async_validate_connection(self) -> bool:
         """Validate the connection to Photoview."""
         _LOGGER.debug("Validating connection to Photoview at %s",

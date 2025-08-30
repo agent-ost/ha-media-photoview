@@ -94,8 +94,12 @@ class PhotoviewMediaSource(MediaSource):
             album_id = item.identifier[6:]  # Remove "album:" prefix
             return await self._browse_album(api_client, album_id)
         elif item.identifier == "people":
-            # People folder - not implemented yet
-            return await self._browse_not_implemented("People")
+            # People folder - show face groups
+            return await self._browse_people_root(api_client)
+        elif item.identifier.startswith("person:"):
+            # Specific person - show their photos
+            person_id = item.identifier[7:]  # Remove "person:" prefix
+            return await self._browse_person(api_client, person_id)
         elif item.identifier == "starred":
             # Starred folder - not implemented yet
             return await self._browse_not_implemented("Starred")
@@ -253,6 +257,98 @@ class PhotoviewMediaSource(MediaSource):
             media_class="directory",
             media_content_type="",
             title=album_title,
+            can_play=False,
+            can_expand=True,
+            children=children,
+        )
+
+    async def _browse_people_root(self, api_client: PhotoviewApiClient) -> BrowseMediaSource:
+        """Browse people (face groups) in the People folder."""
+        _LOGGER.debug("Browsing people root")
+
+        face_groups = await api_client.async_get_face_groups()
+        children = []
+
+        for face_group in face_groups:
+            # Get thumbnail URL from the first image face if available
+            thumbnail = None
+            if face_group.get("imageFaces") and len(face_group["imageFaces"]) > 0:
+                first_image_face = face_group["imageFaces"][0]
+                if first_image_face.get("media") and first_image_face["media"].get("thumbnail"):
+                    relative_url = first_image_face["media"]["thumbnail"]["url"]
+                    thumbnail = api_client.get_authenticated_url(relative_url)
+
+            # Format title with photo count
+            title = face_group.get("label", f"Person {face_group['id']}")
+            photo_count = face_group.get("imageFaceCount", 0)
+            title_with_count = f"{title} ({photo_count} photos)"
+
+            children.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"person:{face_group['id']}",
+                    media_class="directory",
+                    media_content_type="",
+                    title=title_with_count,
+                    can_play=False,
+                    can_expand=True,
+                    thumbnail=thumbnail,
+                )
+            )
+
+        return BrowseMediaSource(
+            domain=DOMAIN,
+            identifier="people",
+            media_class="directory",
+            media_content_type="",
+            title="People",
+            can_play=False,
+            can_expand=True,
+            children=children,
+        )
+
+    async def _browse_person(self, api_client: PhotoviewApiClient, person_id: str) -> BrowseMediaSource:
+        """Browse a specific person's photos."""
+        _LOGGER.debug("Browsing person: %s", person_id)
+
+        # Get person details and photos
+        person_details = await api_client.async_get_face_group_details(person_id)
+        photos = await api_client.async_get_person_photos(person_id)
+
+        children = []
+
+        # Add photos
+        for photo in photos:
+            # Get thumbnail URL if available
+            thumbnail = None
+            if photo.get("thumbnail"):
+                relative_url = photo["thumbnail"]["url"]
+                thumbnail = api_client.get_authenticated_url(relative_url)
+
+            children.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=photo["id"],
+                    media_class="image",
+                    media_content_type="image/jpeg",
+                    title=photo.get("title", f"Photo {photo['id']}"),
+                    can_play=True,
+                    can_expand=False,
+                    thumbnail=thumbnail,
+                )
+            )
+
+        # Use person's label for the title
+        person_title = person_details.get("label", f"Person {person_id}")
+        photo_count = person_details.get("imageFaceCount", len(photos))
+        person_title_with_count = f"{person_title} ({photo_count} photos)"
+
+        return BrowseMediaSource(
+            domain=DOMAIN,
+            identifier=f"person:{person_id}",
+            media_class="directory",
+            media_content_type="",
+            title=person_title_with_count,
             can_play=False,
             can_expand=True,
             children=children,
