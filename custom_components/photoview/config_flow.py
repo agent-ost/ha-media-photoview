@@ -8,10 +8,10 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import (
-    IntegrationBlueprintApiClient,
-    IntegrationBlueprintApiClientAuthenticationError,
-    IntegrationBlueprintApiClientCommunicationError,
-    IntegrationBlueprintApiClientError,
+    PhotoviewApiClient,
+    PhotoviewApiClientAuthenticationError,
+    PhotoviewApiClientCommunicationError,
+    PhotoviewApiClientError,
 )
 from .const import CONF_BASE_URL, DOMAIN, LOGGER
 
@@ -34,13 +34,13 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     password=user_input[CONF_PASSWORD],
                     base_url=user_input[CONF_BASE_URL],
                 )
-            except IntegrationBlueprintApiClientAuthenticationError as exception:
+            except PhotoviewApiClientAuthenticationError as exception:
                 LOGGER.warning(exception)
                 _errors["base"] = "auth"
-            except IntegrationBlueprintApiClientCommunicationError as exception:
+            except PhotoviewApiClientCommunicationError as exception:
                 LOGGER.error(exception)
                 _errors["base"] = "connection"
-            except IntegrationBlueprintApiClientError as exception:
+            except PhotoviewApiClientError as exception:
                 LOGGER.exception(exception)
                 _errors["base"] = "unknown"
             else:
@@ -82,10 +82,10 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _test_credentials(self, username: str, password: str, base_url: str) -> None:
         """Validate credentials."""
-        client = IntegrationBlueprintApiClient(
+        client = PhotoviewApiClient(
             username=username,
             password=password,
             base_url=base_url,
             session=async_create_clientsession(self.hass),
         )
-        await client.async_get_data()
+        await client.async_validate_connection()
