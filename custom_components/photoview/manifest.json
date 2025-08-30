@@ -1,0 +1,12 @@
+{
+  "domain": "photoview",
+  "name": "Photoview",
+  "codeowners": [
+    "@agent-ost"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/agent-ost/ha-media-photoview",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/agent-ost/ha-media-photoview/issues",
+  "version": "0.0.0"
+}
