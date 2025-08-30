@@ -7,3 +7,6 @@ NAME = "Photoview"
 DOMAIN = "photoview"
 VERSION = "0.0.0"
 ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
+
+# Configuration constants
+CONF_BASE_URL = "base_url"

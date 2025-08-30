@@ -31,24 +31,26 @@ class IntegrationBlueprintApiClient:
         self,
         username: str,
         password: str,
+        base_url: str,
         session: aiohttp.ClientSession,
     ) -> None:
         """Sample API Client."""
         self._username = username
         self._password = password
+        self._base_url = base_url.rstrip("/")
         self._session = session
 
     async def async_get_data(self) -> any:
         """Get data from the API."""
         return await self._api_wrapper(
-            method="get", url="https://jsonplaceholder.typicode.com/posts/1"
+            method="get", url=self._base_url
         )
 
     async def async_set_title(self, value: str) -> any:
         """Get data from the API."""
         return await self._api_wrapper(
             method="patch",
-            url="https://jsonplaceholder.typicode.com/posts/1",
+            url=f"{self._base_url}/api/title",
             data={"title": value},
             headers={"Content-type": "application/json; charset=UTF-8"},
         )
@@ -74,7 +76,16 @@ class IntegrationBlueprintApiClient:
                         "Invalid credentials",
                     )
                 response.raise_for_status()
-                return await response.json()
+
+                # For configuration validation, just return the status
+                if method.lower() == "get" and url == self._base_url:
+                    return {"status": "ok", "status_code": response.status}
+
+                # For other endpoints, try to parse JSON
+                try:
+                    return await response.json()
+                except Exception:
+                    return {"status": "ok", "status_code": response.status}
 
         except asyncio.TimeoutError as exception:
             raise IntegrationBlueprintApiClientCommunicationError(

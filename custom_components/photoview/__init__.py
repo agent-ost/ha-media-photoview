@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import IntegrationBlueprintApiClient
-from .const import DOMAIN
+from .const import CONF_BASE_URL, DOMAIN
 from .coordinator import BlueprintDataUpdateCoordinator
 
 PLATFORMS: list[Platform] = [
@@ -30,6 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         client=IntegrationBlueprintApiClient(
             username=entry.data[CONF_USERNAME],
             password=entry.data[CONF_PASSWORD],
+            base_url=entry.data[CONF_BASE_URL],
             session=async_get_clientsession(hass),
         ),
     )

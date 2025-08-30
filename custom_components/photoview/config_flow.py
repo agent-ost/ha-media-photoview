@@ -13,7 +13,7 @@ from .api import (
     IntegrationBlueprintApiClientCommunicationError,
     IntegrationBlueprintApiClientError,
 )
-from .const import DOMAIN, LOGGER
+from .const import CONF_BASE_URL, DOMAIN, LOGGER
 
 
 class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -32,6 +32,7 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 await self._test_credentials(
                     username=user_input[CONF_USERNAME],
                     password=user_input[CONF_PASSWORD],
+                    base_url=user_input[CONF_BASE_URL],
                 )
             except IntegrationBlueprintApiClientAuthenticationError as exception:
                 LOGGER.warning(exception)
@@ -53,6 +54,15 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(
+                        CONF_BASE_URL,
+                        default=(user_input or {}).get(CONF_BASE_URL,
+                                                       "http://localhost:8000"),
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(
+                            type=selector.TextSelectorType.URL
+                        ),
+                    ),
+                    vol.Required(
                         CONF_USERNAME,
                         default=(user_input or {}).get(CONF_USERNAME),
                     ): selector.TextSelector(
@@ -70,11 +80,12 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             errors=_errors,
         )
 
-    async def _test_credentials(self, username: str, password: str) -> None:
+    async def _test_credentials(self, username: str, password: str, base_url: str) -> None:
         """Validate credentials."""
         client = IntegrationBlueprintApiClient(
             username=username,
             password=password,
+            base_url=base_url,
             session=async_create_clientsession(self.hass),
         )
         await client.async_get_data()
