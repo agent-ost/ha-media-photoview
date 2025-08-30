@@ -152,7 +152,7 @@ class PhotoviewApiClient:
         query = """
         query getAlbumChildren($id: ID!) {
             album(id: $id) {
-                subAlbums {
+                subAlbums(order: {order_by: "title", order_direction: ASC}) {
                     id
                     title
                     thumbnail {
@@ -261,13 +261,23 @@ class PhotoviewApiClient:
             query = """
             query GetAlbumPhotos($albumId: ID!) {
                 album(id: $albumId) {
-                    media {
+                    media(order: {order_by: "title", order_direction: ASC}) {
                         id
                         title
                         type
+                        blurhash
                         thumbnail {
                             url
+                            width
+                            height
                         }
+                        highRes {
+                            url
+                        }
+                        videoWeb {
+                            url
+                        }
+                        favorite
                     }
                 }
             }
@@ -285,9 +295,19 @@ class PhotoviewApiClient:
                     id
                     title
                     type
+                    blurhash
                     thumbnail {
                         url
+                        width
+                        height
                     }
+                    highRes {
+                        url
+                    }
+                    videoWeb {
+                        url
+                    }
+                    favorite
                 }
             }
             """

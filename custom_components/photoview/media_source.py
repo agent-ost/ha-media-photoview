@@ -65,11 +65,12 @@ class PhotoviewMediaSource(MediaSource):
 
         # Get the media URL from Photoview
         media_url = await api_client.async_get_media_url(media_id)
-        
+
         # Convert the media URL to use our proxy for authentication
         proxied_url = api_client.get_authenticated_url(media_url)
-        
-        _LOGGER.debug("Resolved media %s to proxied URL: %s", media_id, proxied_url)
+
+        _LOGGER.debug("Resolved media %s to proxied URL: %s",
+                      media_id, proxied_url)
 
         return PlayMedia(proxied_url, "image/jpeg")
 
