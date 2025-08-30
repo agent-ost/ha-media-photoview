@@ -61,19 +61,19 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 def _register_thumbnail_proxy(hass: HomeAssistant) -> None:
-    """Register the thumbnail proxy endpoint."""
+    """Register the photo proxy endpoint for thumbnails and high-res images."""
 
-    class PhotoviewThumbnailView(HomeAssistantView):
-        """View to proxy thumbnail requests to Photoview with authentication."""
+    class PhotoviewPhotoView(HomeAssistantView):
+        """View to proxy photo requests to Photoview with authentication."""
 
-        url = "/api/photoview/thumbnail/{thumbnail_path:.*}"
-        name = "api:photoview:thumbnail"
+        url = "/api/photoview/photo/{photo_path:.*}"
+        name = "api:photoview:photo"
         requires_auth = False  # We'll handle auth internally
 
-        async def get(self, request, thumbnail_path):
-            """Handle GET request for thumbnail."""
-            if not thumbnail_path:
-                return web.Response(status=400, text="Missing thumbnail path")
+        async def get(self, request, photo_path):
+            """Handle GET request for photos (thumbnails and high-res)."""
+            if not photo_path:
+                return web.Response(status=400, text="Missing photo path")
 
             # Get the first available API client (we assume single config for now)
             clients = list(hass.data[DOMAIN].values())
@@ -88,20 +88,20 @@ def _register_thumbnail_proxy(hass: HomeAssistant) -> None:
                 if not api_client._auth_token:
                     await api_client.async_authenticate()
 
-                # Build the full Photoview thumbnail URL
-                photoview_url = f"{api_client._base_url}/api/photo/{thumbnail_path}"
+                # Build the full Photoview photo URL
+                photoview_url = f"{api_client._base_url}/api/photo/{photo_path}"
                 _LOGGER.debug(
-                    "Proxying thumbnail request to: %s", photoview_url)
+                    "Proxying photo request to: %s", photoview_url)
 
                 # Make authenticated request to Photoview using the auth-token cookie
                 headers = {}
                 if api_client._auth_token:
                     headers["Cookie"] = f"auth-token={api_client._auth_token}"
                     _LOGGER.debug(
-                        "Using auth-token cookie for thumbnail request")
+                        "Using auth-token cookie for photo request")
                 else:
                     _LOGGER.warning(
-                        "No auth token available for thumbnail request")
+                        "No auth token available for photo request")
 
                 async with api_client._session.get(photoview_url, headers=headers) as response:
                     _LOGGER.debug(
@@ -121,12 +121,12 @@ def _register_thumbnail_proxy(hass: HomeAssistant) -> None:
                         )
                     else:
                         _LOGGER.warning(
-                            "Failed to fetch thumbnail from Photoview: %s", response.status)
-                        return web.Response(status=response.status)
+                            "Failed to fetch photo from Photoview: %s", response.status)
+                        return web.Response(status=response.status, text="Failed to fetch photo")
 
-            except Exception as e:
-                _LOGGER.error("Error proxying thumbnail request: %s", e)
+            except Exception as err:
+                _LOGGER.error("Error proxying photo request: %s", err)
                 return web.Response(status=500, text="Internal server error")
 
     # Register the view
-    hass.http.register_view(PhotoviewThumbnailView())
+    hass.http.register_view(PhotoviewPhotoView())

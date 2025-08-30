@@ -205,15 +205,15 @@ class PhotoviewApiClient:
         if relative_url.startswith("http"):
             return relative_url
 
-        # Extract filename from the relative URL (remove /api/photo/ prefix)
-        thumbnail_path = relative_url
-        if thumbnail_path.startswith("/api/photo/"):
-            thumbnail_path = thumbnail_path[len("/api/photo/"):]
-        elif thumbnail_path.startswith("api/photo/"):
-            thumbnail_path = thumbnail_path[len("api/photo/"):]
+        # Extract path from the relative URL (remove /api/photo/ prefix)
+        photo_path = relative_url
+        if photo_path.startswith("/api/photo/"):
+            photo_path = photo_path[len("/api/photo/"):]
+        elif photo_path.startswith("api/photo/"):
+            photo_path = photo_path[len("api/photo/"):]
 
-        # Return Home Assistant proxy URL
-        return f"/api/photoview/thumbnail/{thumbnail_path}"
+        # Return Home Assistant proxy URL using the generic photo endpoint
+        return f"/api/photoview/photo/{photo_path}"
 
     async def async_get_media_url(self, media_id: str) -> str:
         """Get the full-resolution URL for a media item."""
@@ -265,6 +265,9 @@ class PhotoviewApiClient:
                         id
                         title
                         type
+                        thumbnail {
+                            url
+                        }
                     }
                 }
             }
@@ -282,6 +285,9 @@ class PhotoviewApiClient:
                     id
                     title
                     type
+                    thumbnail {
+                        url
+                    }
                 }
             }
             """
