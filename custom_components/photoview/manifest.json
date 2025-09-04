@@ -6,7 +6,8 @@
   ],
   "config_flow": true,
   "dependencies": [
-    "media_source"
+    "media_source",
+    "http"
   ],
   "documentation": "https://github.com/agent-ost/ha-media-photoview",
   "iot_class": "local_polling",
