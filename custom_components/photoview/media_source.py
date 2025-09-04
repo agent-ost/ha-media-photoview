@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
-from homeassistant.components.media_player import BrowseMedia
 from homeassistant.components.media_source import (
     BrowseMediaSource,
     MediaSource,
