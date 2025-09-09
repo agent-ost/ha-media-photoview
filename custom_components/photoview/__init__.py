@@ -9,10 +9,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.components import http
 from homeassistant.components.http import HomeAssistantView
 from aiohttp import web
-import aiohttp
 import logging
 
 from .api import PhotoviewApiClient
