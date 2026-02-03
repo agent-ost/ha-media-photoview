@@ -1,6 +1,6 @@
 colorlog==6.10.1
 homeassistant==2024.3.3
-pip>=21.0,<25.3
+pip>=21.0,<26.1
 ruff==0.14.11
 
 josepy<3
